@@ -1,0 +1,183 @@
+version: '3'
+
+x-airflow-common:
+  &airflow-common
+  image: apache/airflow:2.7.0
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    HADOOP_USER_NAME: root
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./pipeline:/opt/airflow/pipeline
+  depends_on:
+    postgres:
+      condition: service_healthy
+  networks:
+    - hadoop_network
+
+services:
+
+  # ==============================
+  # Postgres for Airflow
+  # ==============================
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    networks:
+      - hadoop_network
+
+  # ==============================
+  # Airflow Init
+  # ==============================
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db init &&
+        airflow users create \
+          --username admin \
+          --password admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com
+
+  # ==============================
+  # Airflow Webserver
+  # ==============================
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    restart: always
+
+  # ==============================
+  # Airflow Scheduler
+  # ==============================
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    restart: always
+
+  # ==============================
+  # Hadoop Namenode
+  # ==============================
+  hadoop-namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop-namenode
+    environment:
+      CLUSTER_NAME: gaming-cluster
+      CORE_CONF_fs_defaultFS: hdfs://hadoop-namenode:9000
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    volumes:
+      - namenode_data:/hadoop/dfs/name
+      - /tmp:/tmp
+    networks:
+      - hadoop_network
+
+  # ==============================
+  # Hadoop Datanode
+  # ==============================
+  hadoop-datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop-datanode
+    environment:
+      CORE_CONF_fs_defaultFS: hdfs://hadoop-namenode:9000
+    depends_on:
+      - hadoop-namenode
+    volumes:
+      - datanode_data:/hadoop/dfs/data
+    networks:
+      - hadoop_network
+
+  # ==============================
+  # YARN ResourceManager
+  # ==============================
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: resourcemanager
+    environment:
+      CORE_CONF_fs_defaultFS: hdfs://hadoop-namenode:9000
+    depends_on:
+      - hadoop-namenode
+    ports:
+      - "8088:8088"
+    networks:
+      - hadoop_network
+
+  # ==============================
+  # YARN NodeManager
+  # ==============================
+  nodemanager:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: nodemanager
+    environment:
+      CORE_CONF_fs_defaultFS: hdfs://hadoop-namenode:9000
+    depends_on:
+      - resourcemanager
+    networks:
+      - hadoop_network
+
+  # ==============================
+  # Spark Master
+  # ==============================
+  spark-master:
+    image: apache/spark:3.5.0
+    container_name: spark-master
+    environment:
+      SPARK_MODE: master
+      HADOOP_USER_NAME: root
+      CORE_CONF_fs_defaultFS: hdfs://hadoop-namenode:9000
+    ports:
+      - "7077:7077"
+      - "8081:8080"
+    volumes:
+      - ./pipeline:/opt/spark/pipeline
+      - /tmp:/tmp
+    networks:
+      - hadoop_network
+
+  # ==============================
+  # Spark Worker
+  # ==============================
+  spark-worker:
+    image: apache/spark:3.5.0
+    container_name: spark-worker
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_MEMORY: 1G
+      HADOOP_USER_NAME: root
+      CORE_CONF_fs_defaultFS: hdfs://hadoop-namenode:9000
+    depends_on:
+      - spark-master
+    volumes:
+      - ./pipeline:/opt/spark/pipeline
+      - /tmp:/tmp
+    networks:
+      - hadoop_network
+
+volumes:
+  namenode_data:
+  datanode_data:
+
+networks:
+  hadoop_network:
+    driver: bridge

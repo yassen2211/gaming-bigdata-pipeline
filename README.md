@@ -210,7 +210,69 @@ Yassen Amr
 
 
 
-GitHub:
+---
 
-https://github.com/yassen2211
+# 🗄️ DWH Schema Diagram
+
+## ⭐ Star Schema Design
+
+### Fact Table
+- fact_game_transactions
+
+### Dimension Tables
+- dim_player
+- dim_game
+- dim_time
+- dim_location
+
+---
+
+## 📊 Schema Structure
+
+                dim_player
+                     |
+                     |
+dim_game ---- fact_game_transactions ---- dim_time
+                     |
+                     |
+               dim_location
+
+---
+
+## 📌 Fact Table Columns
+
+| Column | Description |
+|---|---|
+| transaction_id | Unique transaction ID |
+| player_id | Player identifier |
+| game_id | Game identifier |
+| time_id | Time identifier |
+| location_id | Location identifier |
+| amount | Transaction amount |
+
+---
+
+## 📌 Dimension Tables
+
+### dim_player
+- player_id
+- player_name
+- age
+- country
+
+### dim_game
+- game_id
+- game_name
+- category
+
+### dim_time
+- time_id
+- date
+- month
+- year
+
+### dim_location
+- location_id
+- city
+- country
 

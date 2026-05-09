@@ -12,26 +12,26 @@ HDFS_RAW_DIR = "/raw/online_gaming"
 BATCH_SIZE = 500
  
 # ==============================
-# Step 1: قرا الداتا
+
 # ==============================
-print("📥 Loading data...")
+print(" Loading data...")
 df = pd.read_csv(CSV_FILE, sep='\t', on_bad_lines='skip')
-print(f"✅ Loaded {len(df)} rows and {len(df.columns)} columns")
-print(f"📋 Columns: {df.columns.tolist()}")
+print(f" Loaded {len(df)} rows and {len(df.columns)} columns")
+print(f" Columns: {df.columns.tolist()}")
  
 # ==============================
-# Step 2: عمل HDFS directory
+
 # ==============================
-print("📁 Creating HDFS directory...")
+print(" Creating HDFS directory...")
 url = f"{HDFS_HOST}/webhdfs/v1{HDFS_RAW_DIR}?op=MKDIRS&user.name=root"
 requests.put(url)
-print("✅ Directory created")
+print(" Directory created")
  
 # ==============================
-# Step 3: قسّم الداتا لـ Batches
+
 # ==============================
 total_batches = math.ceil(len(df) / BATCH_SIZE)
-print(f"📦 Total batches: {total_batches}")
+print(f" Total batches: {total_batches}")
  
 for i in range(total_batches):
     start = i * BATCH_SIZE
@@ -57,7 +57,7 @@ for i in range(total_batches):
     # امسح الـ temp file
     os.remove(local_path)
  
-    print(f"✅ Batch {i+1}/{total_batches} uploaded to HDFS")
+    print(f" Batch {i+1}/{total_batches} uploaded to HDFS")
  
-print("🎉 All batches uploaded to HDFS successfully!")
+print(" All batches uploaded to HDFS successfully!")
  

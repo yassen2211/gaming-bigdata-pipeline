@@ -17,9 +17,8 @@ spark = SparkSession.builder \
     .config("spark.yarn.am.memory", "512m") \
     .getOrCreate()
  
-print("✅ Spark Connected Successfully")
+print(" Spark Connected Successfully")
  
-# Schema بتاع داتا الـ Gaming
 schema = StructType([
     StructField("name",         StringType(),  True),
     StructField("url",          StringType(),  True),
@@ -32,7 +31,7 @@ schema = StructType([
 ])
  
 input_path = "hdfs://hadoop-namenode:9000/raw/online_gaming/"
-print(f"📥 Reading from HDFS: {input_path}")
+print(f" Reading from HDFS: {input_path}")
  
 try:
     raw_df = spark.read \
@@ -41,23 +40,23 @@ try:
         .csv(input_path)
  
     record_count = raw_df.count()
-    print(f"⚡ Found {record_count} records")
+    print(f" Found {record_count} records")
  
     if record_count > 0:
         bronze_path = "hdfs://hadoop-namenode:9000/user/root/datalake/bronze/online_gaming/"
  
-        print(f"💾 Writing to Bronze Layer: {bronze_path}")
+        print(f" Writing to Bronze Layer: {bronze_path}")
  
         raw_df.write \
             .mode("overwrite") \
             .format("parquet") \
             .save(bronze_path)
  
-        print("✅ Extract complete. Data saved as Parquet in Bronze Layer.")
+        print(" Extract complete. Data saved as Parquet in Bronze Layer.")
         raw_df.printSchema()
         raw_df.show(5, truncate=True)
     else:
-        print("⚠️ No data found in HDFS!")
+        print(" No data found in HDFS!")
  
 except Exception as e:
     print(f"❌ Error: {e}")

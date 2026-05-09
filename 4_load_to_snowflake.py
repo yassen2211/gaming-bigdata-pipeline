@@ -31,7 +31,7 @@ sf_options = {
 GOLD_PATH = "hdfs://hadoop-namenode:9000/user/root/datalake/gold/"
  
 def load_to_snowflake(table_name, mode="overwrite"):
-    print(f"📤 Loading {table_name} to Snowflake...")
+    print(f" Loading {table_name} to Snowflake...")
     df = spark.read.parquet(f"{GOLD_PATH}{table_name}")
     print(f"   Rows to load: {df.count()}")
     df.write \
@@ -40,19 +40,19 @@ def load_to_snowflake(table_name, mode="overwrite"):
         .option("dbtable", table_name.upper()) \
         .mode(mode) \
         .save()
-    print(f"✅ {table_name} loaded successfully!")
+    print(f" {table_name} loaded successfully!")
  
 try:
     load_to_snowflake("dim_games",      mode="overwrite")
     load_to_snowflake("dim_tags",       mode="overwrite")
     load_to_snowflake("fact_engagement", mode="overwrite")
  
-    print("\n🎉 ALL TABLES LOADED TO SNOWFLAKE SUCCESSFULLY!")
+    print("\n ALL TABLES LOADED TO SNOWFLAKE SUCCESSFULLY!")
  
 except Exception as e:
-    print(f"❌ Loading failed: {e}")
+    print(f" Loading failed: {e}")
     raise e
 finally:
     spark.stop()
-    print("🛑 Spark Session Stopped.")
+    print(" Spark Session Stopped.")
  

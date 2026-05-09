@@ -21,14 +21,14 @@ BRONZE_PATH = "hdfs://hadoop-namenode:9000/user/root/datalake/bronze/online_gami
 GOLD_PATH   = "hdfs://hadoop-namenode:9000/user/root/datalake/gold/"
  
 try:
-    print("📥 Reading Bronze Layer...")
+    print(" Reading Bronze Layer...")
     df = spark.read.parquet(BRONZE_PATH)
-    print(f"✅ Loaded {df.count()} records")
+    print(f" Loaded {df.count()} records")
  
     # ==============================
     # تنضيف الداتا
     # ==============================
-    print("🧹 Cleaning data...")
+    print(" Cleaning data...")
  
     # امسح الصفوف اللي name فيها null
     df = df.dropna(subset=["name"])
@@ -63,12 +63,12 @@ try:
          .otherwise("Low")
     )
  
-    print(f"✅ After cleaning: {df.count()} records")
+    print(f" After cleaning: {df.count()} records")
  
     # ==============================
     # Dim Games
     # ==============================
-    print("🎮 Creating dim_games...")
+    print(" Creating dim_games...")
  
     dim_games = df.select(
         F.monotonically_increasing_id().alias("game_key"),
@@ -78,12 +78,12 @@ try:
     )
  
     dim_games.write.mode("overwrite").parquet(f"{GOLD_PATH}dim_games")
-    print("✅ dim_games created")
+    print(" dim_games created")
  
     # ==============================
     # Dim Tags
     # ==============================
-    print("🏷️ Creating dim_tags...")
+    print(" Creating dim_tags...")
  
     dim_tags = df.select(
         F.col("name").alias("game_name"),
@@ -94,12 +94,12 @@ try:
      .withColumn("tag_key", F.monotonically_increasing_id())
  
     dim_tags.write.mode("overwrite").parquet(f"{GOLD_PATH}dim_tags")
-    print("✅ dim_tags created")
+    print(" dim_tags created")
  
     # ==============================
     # Fact Engagement
     # ==============================
-    print("📊 Creating fact_engagement...")
+    print(" Creating fact_engagement...")
  
     fact_engagement = df.select(
         F.monotonically_increasing_id().alias("fact_key"),
@@ -114,22 +114,22 @@ try:
     )
  
     fact_engagement.write.mode("overwrite").parquet(f"{GOLD_PATH}fact_engagement")
-    print("✅ fact_engagement created")
+    print(" fact_engagement created")
  
     # ==============================
     # Summary
     # ==============================
-    print("\n📈 Summary:")
+    print("\n Summary:")
     print(f"   dim_games:      {dim_games.count()} rows")
     print(f"   dim_tags:       {dim_tags.count()} rows")
     print(f"   fact_engagement:{fact_engagement.count()} rows")
  
-    print("\n🎉 Transform complete! Gold Layer is ready.")
+    print("\n Transform complete! Gold Layer is ready.")
  
 except Exception as e:
-    print(f"❌ Error: {e}")
+    print(f" Error: {e}")
     raise e
 finally:
     spark.stop()
-    print("🛑 Spark Session Stopped.")
+    print(" Spark Session Stopped.")
  
